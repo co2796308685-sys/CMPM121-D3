@@ -51,3 +51,15 @@ Deno.test("gathering only stores changed cells", () => {
     "0,0": true,
   });
 });
+
+Deno.test("gather event keeps its inventory after later commands", () => {
+  const state = newGame(SEED);
+
+  const first = apply(state, { type: "gather" });
+  const saved = JSON.parse(JSON.stringify(first));
+
+  apply(state, { type: "move", direction: "east" });
+  apply(state, { type: "gather" });
+
+  assertEquals(first, saved);
+});

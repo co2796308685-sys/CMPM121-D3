@@ -38,6 +38,7 @@ export class GridView extends Phaser.Scene {
   private readonly start: Cell;
   private ground!: Phaser.GameObjects.Graphics;
   private marker!: Phaser.GameObjects.Arc;
+  private readonly harvestedCells = new Set<string>();
 
   constructor(state: GameState) {
     super("grid");
@@ -83,7 +84,9 @@ export class GridView extends Phaser.Scene {
       case "blocked":
         return this.bump(event.at, event.toward);
       case "gathered":
-        return Promise.resolve();
+        this.harvestedCells.add(`${event.at.x},${event.at.y}`);
+        this.drawCellsAround(event.at);
+        return this.gatherAnimation();
       case "gather_failed":
         return Promise.resolve();
       default:
@@ -91,6 +94,19 @@ export class GridView extends Phaser.Scene {
         event satisfies never;
         return Promise.resolve();
     }
+  }
+
+  // Simple gathering feedback.
+  private gatherAnimation(): Promise<void> {
+    return new Promise((done) => {
+      this.tweens.add({
+        targets: this.marker,
+        scale: 1.3,
+        duration: 150,
+        yoyo: true,
+        onComplete: () => done(),
+      });
+    });
   }
 
   private walk(to: Cell): Promise<void> {
@@ -137,6 +153,17 @@ export class GridView extends Phaser.Scene {
           CELL_SIZE - 1,
           CELL_SIZE - 1,
         );
+
+        // Darken harvested cells.
+        if (this.harvestedCells.has(`${x},${y}`)) {
+          this.ground.fillStyle(0x202020, 0.4);
+          this.ground.fillRect(
+            x * CELL_SIZE,
+            y * CELL_SIZE,
+            CELL_SIZE - 1,
+            CELL_SIZE - 1,
+          );
+        }
       }
     }
   }
