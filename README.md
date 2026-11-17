@@ -1,6 +1,6 @@
-# D3 starter
-
 # Witch's Forest
+
+Play: <https://co2796308685-sys.github.io/CMPM121-D3/>
 
 Witch's Forest is a small exploration and crafting game about an apprentice witch completing her final magical trial.
 
@@ -9,6 +9,22 @@ The player explores a mysterious forest, gathers magical materials, and crafts i
 The final goal is to gather rare starshards and craft the Star Seal to complete the witch's trial.
 
 For now, the game uses simple shapes and basic sounds. The focus is on gathering, crafting, progression, and testing.
+
+## Playing
+
+Use the arrow keys to move and Z to gather once from each cell. Craft from the
+recipe buttons, or use Tab and Enter. The buttons show the ingredients still
+needed. Make a Mist Charm to enter mist, then a Flying Broom to reach ridges.
+These tools stay in the satchel. Craft the Star Seal to finish the trial.
+Reload the page to start again.
+
+## Adding a recipe
+
+Add a row to `RECIPES` in `core/recipes.ts`, with its ingredients, output, and
+amount. The craft rule and recipe book read that table. To add a barrier, set its
+`opener` and `item` in `TERRAIN_RULES` in `core/terrain.ts`. Recipe inputs must have
+a source, and reusable openers must not be spent by another recipe.
+`core/recipe_content_test.ts` checks the sources and progression chain.
 
 A walking skeleton: one thin slice of a game that works from end to end. The player moves gridwise over a big seeded world, with a game core that knows nothing about Phaser and a Phaser client that presents what the core reports. Assignment instructions are on Canvas.
 
