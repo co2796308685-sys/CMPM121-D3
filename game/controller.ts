@@ -36,6 +36,11 @@ export class Controller {
     addEventListener("blur", () => this.held = []);
   }
 
+  submit(command: Command) {
+    this.pressed = command;
+    this.next();
+  }
+
   private keyDown(event: KeyboardEvent) {
     if (
       event.key.toLowerCase() === "z" &&
@@ -46,8 +51,7 @@ export class Controller {
       event.preventDefault();
       if (event.repeat) return;
 
-      this.pressed = { type: "gather" };
-      this.next();
+      this.submit({ type: "gather" });
       return;
     }
     const direction = ARROWS[event.key];
@@ -56,8 +60,7 @@ export class Controller {
     event.preventDefault();
     if (event.repeat) return;
     this.held.push(direction);
-    this.pressed = { type: "move", direction };
-    this.next();
+    this.submit({ type: "move", direction });
   }
 
   private keyUp(event: KeyboardEvent) {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>D3 project</title>
+    <title>Witch's Forest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/game/style.css" />
   </head>
@@ -11,6 +11,12 @@
     <main id="app">
       <div id="grid"></div>
       <aside id="hud">
+        <h1>Witch's Forest</h1>
+        <p
+          id="goal">Gather materials, open the mist and ridge, and craft a Star Seal to pass your trial.</p>
+        <p>Arrow keys: walk · Z: gather · Tab / Enter: choose a recipe</p>
+        <p id="ending" role="status"
+          hidden>You passed the trial! The Star Seal shines. Reload to begin a new journey.</p>
         <dl>
           <dt>Position</dt>
           <dd id="position"></dd>
@@ -19,6 +25,8 @@
         </dl>
         <h2>Witch's Satchel</h2>
         <ul id="inventory"></ul>
+        <h2>Spellbook</h2>
+        <ul id="recipes"></ul>
         <p id="live" aria-live="polite"></p>
         <button id="mute" type="button" aria-pressed="false">Sound: on</button>
       </aside>

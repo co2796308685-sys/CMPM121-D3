@@ -15,17 +15,29 @@ export function terrainAt(seed: number, x: number, y: number): Terrain {
   return noise(seed + 2, x, y, 6) < 0.45 ? "grove" : "glade";
 }
 
-export function isPassable(terrain: Terrain): boolean {
-  return terrain !== "mist" && terrain !== "ridge";
+// Each barrier keeps its material and reusable opener together.
+export const TERRAIN_RULES: Record<
+  Terrain,
+  { item: string; opener?: string }
+> = {
+  glade: { item: "silverleaf" },
+  grove: { item: "glowcap" },
+  mist: { item: "moonwater", opener: "mist_charm" },
+  ridge: { item: "starshard", opener: "flying_broom" },
+};
+
+export function isPassable(
+  terrain: Terrain,
+  inventory: Record<string, number> = {},
+): boolean {
+  const opener = TERRAIN_RULES[terrain].opener;
+  return opener === undefined || (inventory[opener] ?? 0) > 0;
 }
 
-// Materials gathered from each terrain.
-export const TERRAIN_YIELDS: Record<Terrain, string> = {
-  glade: "silverleaf",
-  grove: "glowcap",
-  mist: "moonwater",
-  ridge: "starshard",
-};
+// Keep the gathering lookup derived from the same terrain rows.
+export const TERRAIN_YIELDS = Object.fromEntries(
+  Object.entries(TERRAIN_RULES).map(([terrain, rule]) => [terrain, rule.item]),
+) as Record<Terrain, string>;
 
 // Value noise: random numbers at coarse grid points, blended between them, so
 // that terrain forms regions instead of static.

@@ -1,4 +1,9 @@
-import { type GameEvent, type GameState, terrainAt } from "../core/mod.ts";
+import {
+  type GameEvent,
+  type GameState,
+  TERRAIN_RULES,
+  terrainAt,
+} from "../core/mod.ts";
 
 function element(id: string): HTMLElement {
   return document.getElementById(id)!;
@@ -9,14 +14,32 @@ function describe(event: GameEvent): string {
     case "moved":
       return `moved to ${event.to.x}, ${event.to.y}`;
 
-    case "blocked":
-      return `blocked by ${event.terrain} at ${event.toward.x}, ${event.toward.y}`;
+    case "blocked": {
+      const opener = TERRAIN_RULES[event.terrain].opener;
+      return `blocked by ${event.terrain} at ${event.toward.x}, ${event.toward.y}` +
+        (opener ? `; craft ${opener.replaceAll("_", " ")} to enter.` : "");
+    }
 
     case "gathered":
       return `gathered ${event.item}! Total: ${event.inventory[event.item]}`;
 
     case "gather_failed":
       return "This cell has already been harvested.";
+
+    case "crafted":
+      return `Crafted ${event.item.replaceAll("_", " ")} × ${event.amount}.`;
+
+    case "craft_failed":
+      return event.reason === "unknown_recipe"
+        ? "That recipe is not in the spellbook."
+        : `Cannot craft yet. Need: ${
+          Object.entries(event.missing).map(
+            ([item, count]) => `${item.replaceAll("_", " ")} × ${count}`,
+          ).join(", ")
+        }.`;
+
+    case "ended":
+      return "The Star Seal is complete. You passed the witch's trial!";
   }
 }
 
@@ -29,6 +52,7 @@ export class Hud {
   constructor(state: GameState) {
     this.seed = state.seed;
     this.showPosition(state.player.x, state.player.y);
+    this.showInventory(state.inventory);
   }
 
   show(event: GameEvent) {
@@ -45,6 +69,9 @@ export class Hud {
     if (event.type === "moved") {
       this.showPosition(event.to.x, event.to.y);
     }
+
+    if (event.type === "crafted") this.showInventory(event.inventory);
+    if (event.type === "ended") element("ending").hidden = false;
   }
 
   private showPosition(x: number, y: number) {

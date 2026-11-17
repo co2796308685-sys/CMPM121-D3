@@ -8,6 +8,7 @@ import {
   TERRAIN_YIELDS,
   terrainAt,
 } from "./terrain.ts";
+import { missingMaterials, RECIPES } from "./recipes.ts";
 
 export type Cell = { x: number; y: number };
 
@@ -20,12 +21,14 @@ export type GameState = {
   player: Cell;
   inventory: Record<string, number>;
   harvestedCells: Record<string, true>;
+  won: boolean;
 };
 
 // Command: https://gameprogrammingpatterns.com/command.html
 export type Command =
   | { type: "move"; direction: Direction }
-  | { type: "gather" };
+  | { type: "gather" }
+  | { type: "craft"; recipe: string };
 
 // Domain Event: https://martinfowler.com/eaaDev/DomainEvent.html
 export type GameEvent =
@@ -43,7 +46,21 @@ export type GameEvent =
     at: Cell;
     terrain: Terrain;
     reason: "already_harvested";
-  };
+  }
+  | {
+    type: "crafted";
+    recipe: string;
+    item: string;
+    amount: number;
+    inventory: Record<string, number>;
+  }
+  | {
+    type: "craft_failed";
+    recipe: string;
+    reason: "unknown_recipe" | "missing_materials";
+    missing: Record<string, number>;
+  }
+  | { type: "ended" };
 
 const STEPS: Record<Direction, Cell> = {
   north: { x: 0, y: -1 },
@@ -59,6 +76,7 @@ export function newGame(seed: number): GameState {
     player: { x: 0, y: 0 },
     inventory: {},
     harvestedCells: {},
+    won: false,
   };
 }
 
@@ -72,11 +90,14 @@ export function cellAt(state: GameState, x: number, y: number) {
 
 // The single way in. It updates the state it is given and returns the events.
 export function apply(state: GameState, command: Command): GameEvent[] {
+  if (state.won) return [];
   switch (command.type) {
     case "move":
       return move(state, command.direction);
     case "gather":
       return gather(state);
+    case "craft":
+      return craft(state, command.recipe);
   }
 }
 
@@ -89,12 +110,53 @@ function move(state: GameState, direction: Direction): GameEvent[] {
   const from = { ...state.player };
   const to = { x: from.x + step.x, y: from.y + step.y };
   const terrain = terrainAt(state.seed, to.x, to.y);
-  if (!isPassable(terrain)) {
+  if (!isPassable(terrain, state.inventory)) {
     return [{ type: "blocked", at: from, toward: to, terrain }];
   }
   state.player.x = to.x;
   state.player.y = to.y;
   return [{ type: "moved", from, to }];
+}
+
+function craft(state: GameState, recipeId: string): GameEvent[] {
+  const recipe = RECIPES.find((recipe) => recipe.id === recipeId);
+  if (!recipe) {
+    return [{
+      type: "craft_failed",
+      recipe: recipeId,
+      reason: "unknown_recipe",
+      missing: {},
+    }];
+  }
+
+  const missing = missingMaterials(recipe, state.inventory);
+  if (Object.keys(missing).length > 0) {
+    return [{
+      type: "craft_failed",
+      recipe: recipeId,
+      reason: "missing_materials",
+      missing,
+    }];
+  }
+
+  for (const [item, amount] of Object.entries(recipe.inputs)) {
+    state.inventory[item] -= amount;
+  }
+  state.inventory[recipe.output] = (state.inventory[recipe.output] ?? 0) +
+    recipe.amount;
+
+  const events: GameEvent[] = [{
+    type: "crafted",
+    recipe: recipe.id,
+    item: recipe.output,
+    amount: recipe.amount,
+    inventory: { ...state.inventory },
+  }];
+  if (recipe.wins) {
+    state.won = true;
+    events.push({ type: "ended" });
+  }
+  return events;
 }
 
 // Gather materials from the player's current cell.
