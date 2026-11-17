@@ -2,7 +2,12 @@
 // once, and the events it returns are a record of what happened. Whoever called
 // apply() decides how, or whether, to show them over time.
 
-import { isPassable, type Terrain, terrainAt } from "./terrain.ts";
+import {
+  isPassable,
+  type Terrain,
+  TERRAIN_YIELDS,
+  terrainAt,
+} from "./terrain.ts";
 
 export type Cell = { x: number; y: number };
 
@@ -18,12 +23,27 @@ export type GameState = {
 };
 
 // Command: https://gameprogrammingpatterns.com/command.html
-export type Command = { type: "move"; direction: Direction };
+export type Command =
+  | { type: "move"; direction: Direction }
+  | { type: "gather" };
 
 // Domain Event: https://martinfowler.com/eaaDev/DomainEvent.html
 export type GameEvent =
   | { type: "moved"; from: Cell; to: Cell }
-  | { type: "blocked"; at: Cell; toward: Cell; terrain: Terrain };
+  | { type: "blocked"; at: Cell; toward: Cell; terrain: Terrain }
+  | {
+    type: "gathered";
+    at: Cell;
+    terrain: Terrain;
+    item: string;
+    inventory: Record<string, number>;
+  }
+  | {
+    type: "gather_failed";
+    at: Cell;
+    terrain: Terrain;
+    reason: "already_harvested";
+  };
 
 const STEPS: Record<Direction, Cell> = {
   north: { x: 0, y: -1 },
@@ -42,11 +62,21 @@ export function newGame(seed: number): GameState {
   };
 }
 
+// Get the current state of a cell.
+export function cellAt(state: GameState, x: number, y: number) {
+  return {
+    terrain: terrainAt(state.seed, x, y),
+    harvested: state.harvestedCells[`${x},${y}`] === true,
+  };
+}
+
 // The single way in. It updates the state it is given and returns the events.
 export function apply(state: GameState, command: Command): GameEvent[] {
   switch (command.type) {
     case "move":
       return move(state, command.direction);
+    case "gather":
+      return gather(state);
   }
 }
 
@@ -65,4 +95,34 @@ function move(state: GameState, direction: Direction): GameEvent[] {
   state.player.x = to.x;
   state.player.y = to.y;
   return [{ type: "moved", from, to }];
+}
+
+// Gather materials from the player's current cell.
+function gather(state: GameState): GameEvent[] {
+  const at = { ...state.player };
+  const { terrain, harvested } = cellAt(state, at.x, at.y);
+
+  // A cell can only be gathered once.
+  if (harvested) {
+    return [{
+      type: "gather_failed",
+      at,
+      terrain,
+      reason: "already_harvested",
+    }];
+  }
+
+  const item = TERRAIN_YIELDS[terrain];
+  const key = `${at.x},${at.y}`;
+
+  state.harvestedCells[key] = true;
+  state.inventory[item] = (state.inventory[item] ?? 0) + 1;
+
+  return [{
+    type: "gathered",
+    at,
+    terrain,
+    item,
+    inventory: { ...state.inventory },
+  }];
 }

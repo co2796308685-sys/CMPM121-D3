@@ -8,8 +8,15 @@ function describe(event: GameEvent): string {
   switch (event.type) {
     case "moved":
       return `moved to ${event.to.x}, ${event.to.y}`;
+
     case "blocked":
       return `blocked by ${event.terrain} at ${event.toward.x}, ${event.toward.y}`;
+
+    case "gathered":
+      return `gathered ${event.item}! Total: ${event.inventory[event.item]}`;
+
+    case "gather_failed":
+      return "This cell has already been harvested.";
   }
 }
 

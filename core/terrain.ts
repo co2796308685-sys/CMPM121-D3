@@ -19,6 +19,14 @@ export function isPassable(terrain: Terrain): boolean {
   return terrain !== "mist" && terrain !== "ridge";
 }
 
+// Materials gathered from each terrain.
+export const TERRAIN_YIELDS: Record<Terrain, string> = {
+  glade: "silverleaf",
+  grove: "glowcap",
+  mist: "moonwater",
+  ridge: "starshard",
+};
+
 // Value noise: random numbers at coarse grid points, blended between them, so
 // that terrain forms regions instead of static.
 function noise(seed: number, x: number, y: number, scale: number): number {
