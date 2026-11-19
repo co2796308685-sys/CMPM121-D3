@@ -22,6 +22,9 @@ export function unreachableRecipes(recipes: Recipe[]): string[] {
       if (!ready) continue;
 
       made.add(recipe.id);
+      // A winning recipe can be reached, but apply ignores every later command.
+      if (recipe.wins) continue;
+
       reached.add(recipe.output);
       changed = true;
       for (const terrain of terrains) {

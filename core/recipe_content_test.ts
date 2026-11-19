@@ -104,3 +104,15 @@ Deno.test("recipes with a circular dependency stay unreachable", () => {
   ];
   assertEquals(unreachableRecipes(recipes), ["first", "second"]);
 });
+
+Deno.test("a recipe that requires the capstone cannot be crafted before the trial ends", () => {
+  const afterTrial: Recipe = {
+    id: "seal_ribbon",
+    name: "Seal Ribbon",
+    inputs: { star_seal: 1 },
+    output: "seal_ribbon",
+    amount: 1,
+  };
+
+  assertEquals(unreachableRecipes([...RECIPES, afterTrial]), ["seal_ribbon"]);
+});
