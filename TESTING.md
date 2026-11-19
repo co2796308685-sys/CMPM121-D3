@@ -33,3 +33,54 @@ For the recipe timing check, temporarily increase `WALK_MS` in
 `game/grid/grid_view.ts` to 3000. Queue a craft during the walk and watch the
 recipe statuses. They must wait until playback is settled. Restore the original
 duration after checking.
+
+## Full keyboard walkthrough
+
+Open the deployed game with seed 121 or use the same seed locally. Start at
+(0, 0) with an empty satchel. N, S, E, and W mean the up, down, right, and left
+arrow keys. Tap each key once and let the marker finish each move. Z gathers
+from the current cell. At the end of each row, use Tab to focus the named recipe,
+then Enter to craft it.
+
+| Keys                     | Craft        | Position after gathering | Expected result                        |
+| ------------------------ | ------------ | ------------------------ | -------------------------------------- |
+| NNNZ EZ SZ EZ            | Mist Charm   | (2, -2)                  | The charm lets you enter mist.         |
+| EEEEEEZ EZ WWZ           | Moon Thread  | (7, -2)                  | Moonwater becomes the first thread.    |
+| NNZ WZ                   | Flying Broom | (6, -4)                  | The broom spends the first thread.     |
+| EEEZ EZ NZ               | Moon Thread  | (10, -5)                 | The recipe makes a second thread.      |
+| WWWWWNNNNZ WWZ NNNNNNNNZ | Star Seal    | (3, -17)                 | The trial ends and the banner appears. |
+
+To show a barrier before and after crafting, pause at the first row's position
+before making the Mist Charm. Tap East six times. The sixth tap is blocked by
+mist at (8, -2), and you stay at (7, -2). Craft the charm there, tap East again,
+and confirm you enter (8, -2). Walk West six times to (2, -2), then resume at
+the second row. After the ending, try an arrow key, Z, and Enter on a recipe
+button. The marker, satchel, and ending should stay the same.
+
+The route without the optional barrier detour uses 62 commands. The automated
+version in `core/complete_trial_test.ts` starts two fresh games and compares the
+complete event streams and final states, including both Moon Thread crafts.
+
+## Rehearse the live demo checks
+
+- **Broken recipe.** In `core/recipes.ts`, temporarily replace `silverleaf: 2`
+  with `lost_herb: 2` in the Mist Charm recipe. Run
+  `deno test core/recipe_content_test.ts --filter "every recipe input has"`.
+  Expect `mist_charm has no source for lost_herb`. Restore the recipe.
+- **Broken boundary.** Temporarily add
+  `import type _Phaser from "npm:phaser@4.2.1";` to `core/rules.ts`. Run
+  `deno task boundary` and show the file and import that it rejects. Remove
+  the import.
+- **Promoted bug.** The reachability check used to make the Star Seal available
+  as a crafting ingredient even though crafting it ends the trial and the core
+  ignores later commands. A test recipe called Seal Ribbon exposed the mismatch.
+  Temporarily remove `if (recipe.wins) continue;` from `core/can_reach.ts`. Run
+  `deno test core/recipe_content_test.ts --filter "requires the capstone"`.
+  Expect the test to fail because Seal Ribbon is missing from the unreachable
+  list. Restore the line and rerun the same command to show the test passing.
+
+There are three command types in `core/rules.ts` (`move`, `gather`, and
+`craft`). Craft takes a recipe ID, so all four recipes use the same command.
+For the event walkthrough, follow `gathered` from `apply` through
+`game/controller.ts` to `game/presenter.ts`. The grid draws the harvested cell
+and starts the marker animation, and `game/hud.ts` renders the copied inventory.
